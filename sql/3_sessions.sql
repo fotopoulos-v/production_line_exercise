@@ -32,7 +32,7 @@ observation_window AS (
 
 -- -----------------------------------------------------------------------------
 -- Step 2: Filter only START and STOP events, ignoring ON heartbeats
--- For each event, use LEAD() to look ahead at the next event on the same line
+-- For each event, use LEAD() and LAG() to look at neighbouring events
 -- Equivalent to: events = group[group["status"].isin(["START", "STOP"])]
 -- -----------------------------------------------------------------------------
 events AS (
@@ -42,7 +42,9 @@ events AS (
         e.timestamp,
         -- Look at the next event's status and timestamp on the same line
         LEAD(e.status)    OVER (PARTITION BY e.production_line_id ORDER BY e.timestamp) AS next_status,
-        LEAD(e.timestamp) OVER (PARTITION BY e.production_line_id ORDER BY e.timestamp) AS next_timestamp
+        LEAD(e.timestamp) OVER (PARTITION BY e.production_line_id ORDER BY e.timestamp) AS next_timestamp,
+        -- Look at the previous event's status on the same line
+        LAG(e.status)     OVER (PARTITION BY e.production_line_id ORDER BY e.timestamp) AS prev_status
     FROM production.raw_events e
     WHERE e.status IN ('START', 'STOP')
 ),
@@ -50,25 +52,28 @@ events AS (
 
 -- -----------------------------------------------------------------------------
 -- Step 3: Build uptime sessions by pairing START with the next STOP
--- Also handle the case where a STOP has no preceding START
 -- Equivalent to: the current_start pairing logic in Python
 -- -----------------------------------------------------------------------------
-uptime_sessions AS (
+uptime_from_start AS (
     SELECT
         e.production_line_id,
-        'uptime'                                    AS session_type,
-        e.timestamp                                 AS start_timestamp,
-        COALESCE(e.next_timestamp, ow.last_timestamp) AS stop_timestamp,
+        'uptime'                                        AS session_type,
+        e.timestamp                                     AS start_timestamp,
+        COALESCE(e.next_timestamp, ow.last_timestamp)   AS stop_timestamp,
         -- Flag as incomplete if there is no following STOP
         CASE WHEN e.next_timestamp IS NULL THEN FALSE ELSE TRUE END AS is_complete
     FROM events e
     CROSS JOIN observation_window ow
     WHERE e.status = 'START'
+),
 
-    UNION ALL
 
-    -- Handle lines where first event is a STOP (no preceding START)
-    -- The uptime starts from the beginning of the observation window
+-- -----------------------------------------------------------------------------
+-- Step 4: Handle lines where first event is a STOP (no preceding START)
+-- The uptime starts from the beginning of the observation window
+-- Now safe to filter on prev_status since LAG() was calculated in Step 2
+-- -----------------------------------------------------------------------------
+uptime_from_window_start AS (
     SELECT
         e.production_line_id,
         'uptime'                AS session_type,
@@ -78,12 +83,22 @@ uptime_sessions AS (
     FROM events e
     CROSS JOIN observation_window ow
     WHERE e.status = 'STOP'
-      AND LAG(e.status) OVER (PARTITION BY e.production_line_id ORDER BY e.timestamp) IS NULL
+      AND e.prev_status IS NULL
 ),
 
 
 -- -----------------------------------------------------------------------------
--- Step 4: Build downtime gaps between consecutive uptime sessions
+-- Step 5: Combine all uptime sessions
+-- -----------------------------------------------------------------------------
+uptime_sessions AS (
+    SELECT * FROM uptime_from_start
+    UNION ALL
+    SELECT * FROM uptime_from_window_start
+),
+
+
+-- -----------------------------------------------------------------------------
+-- Step 6: Build downtime gaps between consecutive uptime sessions
 -- Equivalent to: the gap calculation loop in Python
 -- -----------------------------------------------------------------------------
 downtime_gaps AS (
@@ -91,7 +106,6 @@ downtime_gaps AS (
         u.production_line_id,
         'downtime'              AS session_type,
         u.stop_timestamp        AS start_timestamp,
-        -- The next uptime session's start is this downtime's end
         LEAD(u.start_timestamp) OVER (
             PARTITION BY u.production_line_id
             ORDER BY u.start_timestamp
@@ -102,7 +116,7 @@ downtime_gaps AS (
 
 
 -- -----------------------------------------------------------------------------
--- Step 5: Add leading downtime for lines that did not start
+-- Step 7: Add leading downtime for lines that did not start
 -- at the beginning of the observation window
 -- Equivalent to: the leading downtime logic in Python
 -- -----------------------------------------------------------------------------
@@ -121,7 +135,7 @@ leading_downtime AS (
 
 
 -- -----------------------------------------------------------------------------
--- Step 6: Add trailing downtime for lines that stopped
+-- Step 8: Add trailing downtime for lines that stopped
 -- before the end of the observation window
 -- Equivalent to: the trailing downtime logic in Python
 -- -----------------------------------------------------------------------------
@@ -140,7 +154,7 @@ trailing_downtime AS (
 
 
 -- -----------------------------------------------------------------------------
--- Step 7: Handle lines with no START and no STOP events (e.g. gr-np-55)
+-- Step 9: Handle lines with no START and no STOP events (e.g. gr-np-55)
 -- These lines were running throughout the entire observation window
 -- -----------------------------------------------------------------------------
 no_events_lines AS (
@@ -166,15 +180,12 @@ SELECT
     session_type,
     start_timestamp,
     stop_timestamp,
-    -- Calculate duration as an interval
-    stop_timestamp - start_timestamp                                    AS duration,
-    -- Format duration as HH:MM:SS for readability
-    TO_CHAR(stop_timestamp - start_timestamp, 'HH24:MI:SS')            AS duration_formatted,
+    stop_timestamp - start_timestamp                        AS duration,
+    TO_CHAR(stop_timestamp - start_timestamp, 'HH24:MI:SS') AS duration_formatted,
     is_complete
 FROM (
     SELECT * FROM uptime_sessions
     UNION ALL
-    -- Only include downtime gaps that have a valid stop timestamp
     SELECT * FROM downtime_gaps      WHERE stop_timestamp IS NOT NULL
     UNION ALL
     SELECT * FROM leading_downtime
