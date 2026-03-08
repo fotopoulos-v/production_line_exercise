@@ -1,3 +1,4 @@
+
 -- =============================================================================
 -- 3_sessions.sql
 -- Creates a view that builds the complete timeline of uptime and downtime
