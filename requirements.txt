@@ -1,2 +1,6 @@
+# Dependencies are managed via pyproject.toml
+# Install the package with: pip install -e .
+# This file is kept as a convenience reference
+
 pandas
 pytest

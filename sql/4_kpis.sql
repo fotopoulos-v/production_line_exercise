@@ -26,8 +26,7 @@ SELECT
     duration_formatted  AS duration,
     is_complete
 FROM production.sessions
-WHERE production_line_id = 'gr-np-47'
-  AND session_type = 'uptime'
+WHERE session_type = 'uptime'
 ORDER BY start_timestamp;
 
 

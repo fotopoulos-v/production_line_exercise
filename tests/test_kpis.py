@@ -1,10 +1,6 @@
 import pytest
 import pandas as pd
-import sys
 import os
-
-# Add the project root to the Python path so the package can be found
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from production_kpi import load_data, build_sessions
 from production_kpi import get_line_sessions, get_floor_uptime_downtime, get_most_downtime_line

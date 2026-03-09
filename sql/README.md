@@ -85,8 +85,15 @@ Run `4_kpis.sql` to create the 3 KPI views:
 ## Querying the KPIs
 
 ### Business Question 1
-For production line "gr-np-47", return all uptime sessions with their
-start timestamp, stop timestamp and duration:
+Return all uptime sessions for a specific production line with their
+start timestamp, stop timestamp and duration. Filter by `production_line_id`
+when querying:
+```sql
+SELECT * FROM production.kpi_line_sessions
+WHERE production_line_id = 'gr-np-47';
+```
+
+To see uptime sessions for all production lines at once:
 ```sql
 SELECT * FROM production.kpi_line_sessions;
 ```
