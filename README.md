@@ -41,6 +41,7 @@ production_line_exercise/
 │   └── usage.py                  # Demonstrates how to use the package end to end
 │
 ├── README.md                     # Project overview and how to use guide
+├── pyproject.toml                # Package installation configuration
 ├── requirements.txt              # Python dependencies
 └── .gitignore                    # Files and folders excluded from version control
 ```
@@ -63,9 +64,16 @@ git clone https://github.com/fotopoulos-v/production_line_exercise.git
 cd production_line_exercise
 ```
 
-**3. Install the dependencies:**
+**3. Install the package and its dependencies:**
 ```bash
-pip install -r requirements.txt
+pip install -e .
+```
+
+This installs the `production_kpi` package in editable mode, meaning any
+changes to the source files are immediately reflected without reinstalling.
+`pytest` can be installed separately for running the tests:
+```bash
+pip install pytest
 ```
 
 > **Note on virtual environments:** In production settings it is recommended
@@ -74,7 +82,8 @@ pip install -r requirements.txt
 > ```bash
 > python3 -m venv venv
 > source venv/bin/activate        # On Windows: venv\Scripts\activate
-> pip install -r requirements.txt
+> pip install -e .
+> pip install pytest
 > ```
 > For this package we skip this step since the only dependencies are `pandas`
 > and `pytest`, and to keep the setup as simple as possible.
@@ -87,6 +96,12 @@ To see all three business questions answered with the sample dataset, run the
 following command from the project root folder in your terminal:
 ```bash
 python3 examples/usage.py
+```
+
+By default Business Question 1 uses production line `gr-np-47`. To use a
+different line pass the `--line-id` argument:
+```bash
+python3 examples/usage.py --line-id gr-np-08
 ```
 
 ---
@@ -125,6 +140,7 @@ sessions = build_sessions(df)
 # Business Question 1
 # Returns a table of uptime sessions for the given production line
 # with start timestamp, stop timestamp, duration and completeness flag
+# Prints a warning if any sessions have estimated boundaries
 get_line_sessions(sessions, "gr-np-47")
 
 # Business Question 2

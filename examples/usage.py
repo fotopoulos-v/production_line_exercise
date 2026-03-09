@@ -1,39 +1,51 @@
 import sys
 import os
-
-# Add the project root to the Python path so the package can be found
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import argparse
 
 from production_kpi import load_data, build_sessions
 from production_kpi import get_line_sessions, get_floor_uptime_downtime, get_most_downtime_line
 
 
-# ── Configuration ─────────────────────────────────────────────────────────────
+# ── Argument Parsing ──────────────────────────────────────────────────────────
+# Allows the user to pass the production line ID and data path as command line
+# arguments instead of hardcoding them in the script.
+# If no arguments are provided, sensible defaults are used.
 
-# Path to the dataset relative to the project root
-DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "dataset.csv")
-
-# Production line to use for Business Question 1
-LINE_ID = "gr-np-47"
+parser = argparse.ArgumentParser(
+    description="Production Line KPI Calculator"
+)
+parser.add_argument(
+    "--line-id",
+    type=str,
+    default="gr-np-47",
+    help="Production line ID for Business Question 1 (default: gr-np-47)"
+)
+parser.add_argument(
+    "--data-path",
+    type=str,
+    default=os.path.join(os.path.dirname(__file__), "..", "data", "dataset.csv"),
+    help="Path to the CSV data file (default: data/dataset.csv)"
+)
+args = parser.parse_args()
 
 
 # ── Load and transform data ───────────────────────────────────────────────────
 
 print("Loading data...")
-df = load_data(DATA_PATH)
+df = load_data(args.data_path)
 
 print("Building sessions...")
 sessions = build_sessions(df)
 
 
 # ── Business Question 1 ───────────────────────────────────────────────────────
-# For production line "gr-np-47", show all uptime sessions with their
+# For the given production line, show all uptime sessions with their
 # start timestamp, stop timestamp and duration
 
 print(f"\n{'='*60}")
-print(f"Business Question 1: Uptime sessions for '{LINE_ID}'")
+print(f"Business Question 1: Uptime sessions for '{args.line_id}'")
 print(f"{'='*60}")
-print(get_line_sessions(sessions, LINE_ID).to_string(index=False))
+print(get_line_sessions(sessions, args.line_id).to_string(index=False))
 
 
 # ── Business Question 2 ───────────────────────────────────────────────────────

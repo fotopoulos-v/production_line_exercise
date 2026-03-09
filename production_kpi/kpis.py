@@ -9,6 +9,8 @@ def get_line_sessions(sessions_df: pd.DataFrame, line_id: str) -> pd.DataFrame:
     Answers Business Question 1:
     For a given production line, returns a table with the start timestamp,
     stop timestamp and duration of each uptime session.
+    If any sessions are incomplete (boundaries estimated from observation window),
+    a warning message is printed to inform the user.
 
     Parameters
     ----------
@@ -21,6 +23,7 @@ def get_line_sessions(sessions_df: pd.DataFrame, line_id: str) -> pd.DataFrame:
     -------
     pd.DataFrame
         A DataFrame with columns:
+        - production_line_id (datetime)
         - start_timestamp (datetime)
         - stop_timestamp (datetime)
         - duration (str): uptime duration in HH:MM:SS format
@@ -36,8 +39,19 @@ def get_line_sessions(sessions_df: pd.DataFrame, line_id: str) -> pd.DataFrame:
         ["production_line_id", "start_timestamp", "stop_timestamp", "duration", "is_complete"]
     ].reset_index(drop=True)
 
+    # Warn the user if the line does not exist in the dataset
     if result.empty:
-        print(f"No uptime sessions found for production line '{line_id}'.")
+        print(f"Warning: no uptime sessions found for production line '{line_id}'.")
+        return result
+
+    # Warn the user if any sessions have estimated boundaries
+    if not result["is_complete"].all():
+        print(
+            f"Warning: production line '{line_id}' has incomplete sessions "
+            f"(is_complete = False). "
+            f"Some start or stop timestamps were estimated from the observation "
+            f"window boundaries and may not reflect real events."
+        )
 
     return result
 
