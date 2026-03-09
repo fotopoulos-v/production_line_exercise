@@ -18,12 +18,31 @@ from production line event data.
 ```
 production_line_exercise/
 │
-├── production_kpi/          # Python package
-├── sql/                     # SQL implementation for DWH
-├── tests/                   # Unit tests
-├── data/                    # Sample dataset
-├── examples/                # Usage example
-└── requirements.txt
+├── production_kpi/               # Python package
+│   ├── __init__.py               # Exposes user facing functions
+│   ├── loader.py                 # Loads and cleans the raw data from a CSV file
+│   ├── transforms.py             # Builds the uptime/downtime session timeline
+│   └── kpis.py                   # Functions that answer the 3 business questions
+│
+├── sql/                          # SQL implementation for DWH
+│   ├── README.md                 # DWH implementation guide
+│   ├── 1_tables.sql              # Creates the production schema and raw events table
+│   ├── 2_sample_data.sql         # (Optional) Inserts sample data for testing
+│   ├── 3_sessions.sql            # Creates the sessions view
+│   └── 4_kpis.sql                # Creates the 3 KPI views
+│
+├── tests/                        # Unit tests
+│   └── test_kpis.py              # Tests for loader, transforms and kpis functions
+│
+├── data/                         # Sample dataset
+│   └── dataset.csv               # Raw production line event data
+│
+├── examples/                     # Usage example
+│   └── usage.py                  # Demonstrates how to use the package end to end
+│
+├── README.md                     # Project overview and how to use guide
+├── requirements.txt              # Python dependencies
+└── .gitignore                    # Files and folders excluded from version control
 ```
 
 ---
@@ -36,26 +55,26 @@ Open a terminal and run the following commands one by one:
 
 **1. Clone the repository to your local machine:**
 ```bash
-$ git clone https://github.com/fotopoulos-v/production_line_exercise.git
+git clone https://github.com/fotopoulos-v/production_line_exercise.git
 ```
 
 **2. Navigate into the project folder:**
 ```bash
-$ cd production_line_exercise
+cd production_line_exercise
 ```
 
 **3. Install the dependencies:**
 ```bash
-$ pip install -r requirements.txt
+pip install -r requirements.txt
 ```
 
 > **Note on virtual environments:** In production settings it is recommended
 > to create a virtual environment before installing dependencies in order to
 > avoid conflicts with other Python projects on your system:
 > ```bash
-> $ python3 -m venv venv
-> $ source venv/bin/activate        # On Windows: venv\Scripts\activate
-> $ pip install -r requirements.txt
+> python3 -m venv venv
+> source venv/bin/activate        # On Windows: venv\Scripts\activate
+> pip install -r requirements.txt
 > ```
 > For this package we skip this step since the only dependencies are `pandas`
 > and `pytest`, and to keep the setup as simple as possible.
@@ -67,16 +86,16 @@ $ pip install -r requirements.txt
 To see all three business questions answered with the sample dataset, run the
 following command from the project root folder in your terminal:
 ```bash
-$ python3 examples/usage.py
+python3 examples/usage.py
 ```
 
 ---
 
-### Step by step usage
+### Step by Step Usage
 
-Instead of the Quick Start section where the user can obtain the answers of all 
-three business questions at once, the answers can be obtained through a simple 
-three step flow. All commands below are run in a Python script or interactive 
+Instead of the Quick Start section where the user can obtain the answers of all
+three business questions at once, the answers can be obtained through a simple
+three step flow. All commands below are run in a Python script or interactive
 Python session from the project root folder.
 
 **Step 1 — Import the package functions:**
@@ -125,7 +144,7 @@ get_most_downtime_line(sessions)
 
 From the project root folder in your terminal, run:
 ```bash
-$ pytest tests/ -v
+pytest tests/ -v
 ```
 
 Each test will be listed with a `PASSED` or `FAILED` status. All 4 tests

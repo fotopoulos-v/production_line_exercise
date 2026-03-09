@@ -180,5 +180,5 @@ files will work without any further changes.
 ### Scenario 3 — Your DWH uses a different SQL dialect
 
 The SQL in this package is written for **PostgreSQL 12+**. If your DWH uses
-a different dialect, adjustments may be needed:
+a different dialect, adjustments may be needed.
 
