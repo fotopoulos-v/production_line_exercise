@@ -66,15 +66,12 @@ cd production_line_exercise
 
 **3. Install the package and its dependencies:**
 ```bash
-pip install -e .
+pip install -e ".[dev]"
 ```
 
-This installs the `production_kpi` package in editable mode, meaning any
-changes to the source files are immediately reflected without reinstalling.
-`pytest` can be installed separately for running the tests:
-```bash
-pip install pytest
-```
+This installs the `production_kpi` package in editable mode along with all
+dependencies including `pytest`. Editable mode means any changes to the source
+files are immediately reflected without reinstalling.
 
 > **Note on virtual environments:** In production settings it is recommended
 > to create a virtual environment before installing dependencies in order to
@@ -82,8 +79,7 @@ pip install pytest
 > ```bash
 > python3 -m venv venv
 > source venv/bin/activate        # On Windows: venv\Scripts\activate
-> pip install -e .
-> pip install pytest
+> pip install -e ".[dev]"
 > ```
 > For this package we skip this step since the only dependencies are `pandas`
 > and `pytest`, and to keep the setup as simple as possible.
@@ -95,13 +91,15 @@ pip install pytest
 To see all three business questions answered with the sample dataset, run the
 following command from the project root folder in your terminal:
 ```bash
-python3 examples/usage.py
+python3 examples/usage.py        # macOS/Linux
+python examples/usage.py         # Windows
 ```
 
 By default Business Question 1 uses production line `gr-np-47`. To use a
 different line pass the `--line-id` argument:
 ```bash
-python3 examples/usage.py --line-id gr-np-08
+python3 examples/usage.py --line-id gr-np-08        # macOS/Linux
+python examples/usage.py --line-id gr-np-08          # Windows
 ```
 
 ---
@@ -160,7 +158,8 @@ get_most_downtime_line(sessions)
 
 From the project root folder in your terminal, run:
 ```bash
-pytest tests/ -v
+python3 -m pytest tests/ -v        # macOS/Linux
+python -m pytest tests/ -v         # Windows
 ```
 
 Each test will be listed with a `PASSED` or `FAILED` status. All 4 tests
